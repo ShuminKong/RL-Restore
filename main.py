@@ -16,11 +16,20 @@ flags.DEFINE_string('play_model', 'models/', 'Path for testing model')
 # training
 flags.DEFINE_string('save_dir', 'models/save/', 'Path for saving models')
 flags.DEFINE_string('log_dir', 'logs/', 'Path for logs')
+flags.DEFINE_string('data_dir', '/data', 'Path for saving models')
+flags.DEFINE_string('ds', 'GoPro', 'Path for logs')
+
+
 FLAGS = flags.FLAGS
 
 
 def main(_):
-    with tf.Session() as sess:
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
+
+    sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+
+    # with tf.Session() as sess:
+    with sess.as_default():
         config = get_config(FLAGS)
         env = MyEnvironment(config)
         agent = Agent(config, env, sess)

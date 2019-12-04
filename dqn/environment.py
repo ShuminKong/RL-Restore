@@ -4,7 +4,7 @@ import os
 import h5py
 import cv2
 from .utils import psnr_cal, load_imgs, step_psnr_reward, data_reformat
-
+from .dl import get_dataloader
 class MyEnvironment(object):
     def __init__(self, config):
         self.reward = 0
@@ -14,26 +14,29 @@ class MyEnvironment(object):
         self.is_train = config.is_train
         self.count = 0  # count restoration step
         self.psnr, self.psnr_pre, self.psnr_init = 0., 0., 0.
+        
 
         if self.is_train:
             # training data
-            self.train_list = [config.train_dir + file for file in os.listdir(config.train_dir) if file.endswith('.h5')]
-            self.train_cur = 0
-            self.train_max = len(self.train_list)
-            f = h5py.File(self.train_list[self.train_cur], 'r')
-            self.data = f['data'].value
-            self.label = f['label'].value
-            f.close()
+            # self.train_list = [config.train_dir + file for file in os.listdir(config.train_dir) if file.endswith('.h5')]
+            # self.train_cur = 0
+            # self.train_max = len(self.train_list)
+            # f = h5py.File(self.train_list[self.train_cur], 'r')
+            # self.data = f['data'].value
+            # self.label = f['label'].value
+            # f.close()
+            self.dataloader, self.test_dataloader = get_dataloader(config.ds, config.data_dir, 5, 63, 0)
             self.data_index = 0
-            self.data_len = len(self.data)
+            self.data_len = len(self.dataloader)
+            self.data_it = iter(self.dataloader)
 
             # validation data
-            f = h5py.File(config.val_dir + os.listdir(config.val_dir)[0], 'r')
-            self.data_test = f['data'].value
-            self.label_test = f['label'].value
-            f.close()
-            self.data_all = self.data_test
-            self.label_all = self.label_test
+            # f = h5py.File(config.val_dir + os.listdir(config.val_dir)[0], 'r')
+            # self.data_test = f['data'].value
+            # self.label_test = f['label'].value
+            # f.close()
+            # self.data_all = self.data_test
+            # self.label_all = self.label_test
         else:
             if config.dataset == 'mine':
                 self.my_img_dir = config.test_dir + 'mine/'
@@ -43,6 +46,7 @@ class MyEnvironment(object):
 
             elif config.dataset in ['mild', 'moderate', 'severe']:
                 # test data
+                _, self.dataloader = get_dataloader('GoPro', '/data', 5, 63, 0)
                 self.test_batch = config.test_batch
                 self.test_in = config.test_dir + config.dataset + '_in/'
                 self.test_gt = config.test_dir + config.dataset + '_gt/'
@@ -52,7 +56,8 @@ class MyEnvironment(object):
                 list_gt.sort()
                 self.name_list = [os.path.splitext(os.path.basename(file))[0] for file in list_in]
                 self.data_all, self.label_all = load_imgs(list_in, list_gt)
-                self.test_total = len(list_in)
+                self.data_it = iter(self.dataloader)
+                self.test_total = len(self.dataloader)
                 self.test_cur = 0
     
                 # data reformat, because the data for tools training are in a different format
@@ -66,9 +71,9 @@ class MyEnvironment(object):
         if self.is_train or config.dataset!='mine':
             # input PSNR
             self.base_psnr = 0.
-            for k in range(len(self.data_test)):
-                self.base_psnr += psnr_cal(self.data_test[k, ...], self.label_test[k, ...])
-            self.base_psnr /= len(self.data_test)
+            # for k in range(len(self.data_test)):
+            #     self.base_psnr += psnr_cal(self.data_test[k, ...], self.label_test[k, ...])
+            # self.base_psnr /= len(self.data_test)
 
             # reward functions
             self.rewards = {'step_psnr_reward': step_psnr_reward}
@@ -103,40 +108,45 @@ class MyEnvironment(object):
 
     def new_image(self):
         self.terminal = False
-        while self.data_index < self.data_len:
-            self.img = self.data[self.data_index: self.data_index + 1, ...]
-            self.img_gt = self.label[self.data_index: self.data_index + 1, ...]
+        while True:
+            try:
+                self.img, self.img_gt, _ = next(self.data_it)
+                self.img, self.img_gt = self.img.numpy(), self.img_gt.numpy()
+                self.img, self.img_gt = self.img.transpose((0, 2,3,1)), self.img_gt.transpose((0, 2,3,1))
+            except StopIteration:
+                self.data_it = iter(self.dataloader)
+                continue
             self.psnr = psnr_cal(self.img, self.img_gt)
             if self.psnr > 50:  # ignore too smooth samples and rule out 'inf'
-                self.data_index += 1
+                continue
             else:
                 break
 
-        # update training file
-        if self.data_index >= self.data_len:
-            if self.train_max > 1:
-                self.train_cur += 1
-                if self.train_cur >= self.train_max:
-                    self.train_cur = 0
+        # # update training file
+        # if self.data_index >= self.data_len:
+        #     if self.train_max > 1:
+        #         self.train_cur += 1
+        #         if self.train_cur >= self.train_max:
+        #             self.train_cur = 0
 
-                # load new file
-                print('loading file No.%d' % (self.train_cur + 1))
-                f = h5py.File(self.train_list[self.train_cur], 'r')
-                self.data = f['data'].value
-                self.label = f['label'].value
-                self.data_len = len(self.data)
-                f.close()
+        #         # load new file
+        #         print('loading file No.%d' % (self.train_cur + 1))
+        #         f = h5py.File(self.train_list[self.train_cur], 'r')
+        #         self.data = f['data'].value
+        #         self.label = f['label'].value
+        #         self.data_len = len(self.data)
+        #         f.close()
 
-            # start from beginning
-            self.data_index = 0
-            while True:
-                self.img = self.data[self.data_index: self.data_index + 1, ...]
-                self.img_gt = self.label[self.data_index: self.data_index + 1, ...]
-                self.psnr = psnr_cal(self.img, self.img_gt)
-                if self.psnr > 50:  # ignore too smooth samples and rule out 'inf'
-                    self.data_index += 1
-                else:
-                    break
+        #     # start from beginning
+        #     self.data_index = 0
+        #     while True:
+        #         self.img = self.data[self.data_index: self.data_index + 1, ...]
+        #         self.img_gt = self.label[self.data_index: self.data_index + 1, ...]
+        #         self.psnr = psnr_cal(self.img, self.img_gt)
+        #         if self.psnr > 50:  # ignore too smooth samples and rule out 'inf'
+        #             self.data_index += 1
+        #         else:
+        #             break
 
         self.reward = 0
         self.count = 0
@@ -209,20 +219,29 @@ class MyEnvironment(object):
 
 
     def update_test_data(self):
-        self.test_cur = self.test_cur + len(self.data_test)
-        test_end = min(self.test_total, self.test_cur + self.test_batch)
-        if self.test_cur >= test_end:
-            return False #failed
-        else:
-            self.data_test = self.data_all[self.test_cur: test_end, ...]
-            self.label_test = self.label_all[self.test_cur: test_end, ...]
+        try:
+            self.data_test, self.label_test, _ = next(self.data_it)
+            self.test_cur += len(self.data_test)
+            self.data_test, self.label_test = self.data_test.numpy(), self.label_test.numpy()
+        except StopIteration:
+            return False
 
-            # update base psnr
-            self.base_psnr = 0.
-            for k in range(len(self.data_test)):
-                self.base_psnr += psnr_cal(self.data_test[k, ...], self.label_test[k, ...])
-            self.base_psnr /= len(self.data_test)
-            return True #successful
+
+        # self.test_cur = self.test_cur + len(self.data_test)
+        # test_end = min(self.test_total, self.test_cur + self.test_batch)
+        # if self.test_cur >= test_end:
+        #     return False #failed
+        # else:
+        #     self.data_test = self.data_all[self.test_cur: test_end, ...]
+        #     self.label_test = self.label_all[self.test_cur: test_end, ...]
+
+        #     # update base psnr
+        # if not self.is_train:
+        self.base_psnr = 0.
+        for k in range(len(self.data_test)):
+            self.base_psnr += psnr_cal(self.data_test[k, ...], self.label_test[k, ...])
+        self.base_psnr /= len(self.data_test)
+        return True #successful
 
 
     def act_test_mine(self, my_img_cur, action):

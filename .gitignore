@@ -11,3 +11,6 @@ data/backup/
 data/train/*.h5
 data/train/*.jpg
 data/train/DIV2K/
+
+.vscode
+venv

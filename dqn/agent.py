@@ -223,54 +223,54 @@ class Agent(BaseModel):
             total_reward += reward
 
             # validation and logging
-            if self.step >= self.learn_start and self.step % self.test_step == self.test_step - 1:
-                avg_reward = total_reward / self.test_step
-                avg_loss = self.total_loss / self.update_count
-                avg_q = self.total_q / self.update_count
-                avg_ep_reward = np.mean(ep_rewards)
+            # if self.step >= self.learn_start and self.step % self.test_step == self.test_step - 1:
+            #     avg_reward = total_reward / self.test_step
+            #     avg_loss = self.total_loss / self.update_count
+            #     avg_q = self.total_q / self.update_count
+            #     avg_ep_reward = np.mean(ep_rewards)
 
-                print('\navg_r: %.4f, avg_l: %.6f, avg_q: %3.6f, avg_ep_r: %.4f' \
-                      % (avg_reward, avg_loss, avg_q, avg_ep_reward))
+            #     print('\navg_r: %.4f, avg_l: %.6f, avg_q: %3.6f, avg_ep_r: %.4f' \
+            #           % (avg_reward, avg_loss, avg_q, avg_ep_reward))
 
-                if self.step % self.save_step == self.save_step - 1 and max_avg_ep_reward * 0.9 <= avg_ep_reward:
-                    self.save_model(self.step + 1)
-                    max_avg_ep_reward = max(max_avg_ep_reward, avg_ep_reward)
+            #     if self.step % self.save_step == self.save_step - 1 and max_avg_ep_reward * 0.9 <= avg_ep_reward:
+            #         self.save_model(self.step + 1)
+            #         max_avg_ep_reward = max(max_avg_ep_reward, avg_ep_reward)
 
-                # validation
-                reward_test_vec = []
-                psnr_test_vec = []
-                reward_str = ''
-                psnr_str = ''
-                reward_sum = 0.
-                for cur_step in range(self.stop_step):
-                    action_test = self.predict_test(count_step=cur_step)
-                    self.pre_action_test = action_test.copy()
-                    reward_test, psnr_test, base_psnr = self.env.act_test(action_test, step=cur_step)
-                    reward_sum += reward_test
-                    reward_test_vec.append(reward_test)
-                    psnr_test_vec.append(psnr_test)
-                    reward_str += 'reward' + str(cur_step + 1) + ': %.4f, '
-                    psnr_str += 'psnr' + str(cur_step + 1) + ': %.4f, '
-                reward_str += 'reward_sum: %.4f, '
-                reward_test_vec.append(reward_sum)
-                print_str = reward_str + psnr_str + 'base_psnr: %.4f'
-                print(print_str % tuple(reward_test_vec + psnr_test_vec + [base_psnr]))
+            #     # validation
+            #     reward_test_vec = []
+            #     psnr_test_vec = []
+            #     reward_str = ''
+            #     psnr_str = ''
+            #     reward_sum = 0.
+            #     for cur_step in range(self.stop_step):
+            #         action_test = self.predict_test(count_step=cur_step)
+            #         self.pre_action_test = action_test.copy()
+            #         reward_test, psnr_test, base_psnr = self.env.act_test(action_test, step=cur_step)
+            #         reward_sum += reward_test
+            #         reward_test_vec.append(reward_test)
+            #         psnr_test_vec.append(psnr_test)
+            #         reward_str += 'reward' + str(cur_step + 1) + ': %.4f, '
+            #         psnr_str += 'psnr' + str(cur_step + 1) + ': %.4f, '
+            #     reward_str += 'reward_sum: %.4f, '
+            #     reward_test_vec.append(reward_sum)
+            #     print_str = reward_str + psnr_str + 'base_psnr: %.4f'
+            #     print(print_str % tuple(reward_test_vec + psnr_test_vec + [base_psnr]))
 
-                # logging (write summary)
-                diction = {'training.learning_rate':
-                               self.learning_rate_op.eval({self.learning_rate_step: self.step})}
-                for cur_step in range(self.stop_step):
-                    diction['test.reward' + str(cur_step + 1)] = reward_test_vec[cur_step]
-                diction['test.reward_sum'] = reward_test_vec[-1]
-                self.inject_summary(diction)
+            #     # logging (write summary)
+            #     diction = {'training.learning_rate':
+            #                    self.learning_rate_op.eval({self.learning_rate_step: self.step})}
+            #     for cur_step in range(self.stop_step):
+            #         diction['test.reward' + str(cur_step + 1)] = reward_test_vec[cur_step]
+            #     diction['test.reward_sum'] = reward_test_vec[-1]
+            #     self.inject_summary(diction)
 
-                total_reward = 0.
-                self.total_loss = 0.
-                self.total_q = 0.
-                self.update_count = 0
-                ep_reward = 0.
-                ep_rewards = []
-                actions = []
+            #     total_reward = 0.
+            #     self.total_loss = 0.
+            #     self.total_q = 0.
+            #     self.update_count = 0
+            #     ep_reward = 0.
+            #     ep_rewards = []
+            #     actions = []
 
 
     def predict(self, s_t, test_ep=None):
