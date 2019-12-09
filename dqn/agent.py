@@ -21,7 +21,7 @@ class Agent(BaseModel):
         self.build_dqn()
         if self.is_train:
             self.memory = ReplayMemory(self.config)
-
+        self.is_save = False
 
     def build_dqn(self):
         self.w = {}
@@ -232,9 +232,9 @@ class Agent(BaseModel):
             #     print('\navg_r: %.4f, avg_l: %.6f, avg_q: %3.6f, avg_ep_r: %.4f' \
             #           % (avg_reward, avg_loss, avg_q, avg_ep_reward))
 
-            #     if self.step % self.save_step == self.save_step - 1 and max_avg_ep_reward * 0.9 <= avg_ep_reward:
-            #         self.save_model(self.step + 1)
-            #         max_avg_ep_reward = max(max_avg_ep_reward, avg_ep_reward)
+            if self.step % self.save_step == self.save_step - 1:
+                self.save_model(self.step + 1)
+                # max_avg_ep_reward = max(max_avg_ep_reward, avg_ep_reward)
 
             #     # validation
             #     reward_test_vec = []
@@ -403,7 +403,7 @@ class Agent(BaseModel):
             for k in range(len(imgs)):
                 if self.pre_action_test[k] < self.action_size - 1:
                     action_in[k, self.pre_action_test[k]] = 1.
-
+        print('imgs',imgs.shape)
         actions_vec, self.state_test = self.sess_test.run([self.q, self.rnn_state],
                                        {self.s_t: imgs, self.action_in: action_in, self.state_in: self.state_test,
                                         self.batch: len(imgs), self.length: 1})
@@ -461,7 +461,7 @@ class Agent(BaseModel):
         # loop for test batch
         test_update = True
         total_base_psnr = 0.
-        name_list = self.env.name_list
+        # name_list = self.env.name_list
         while test_update:
             img_num, batch_size = self.env.get_test_info()  # current image No. and batch size
             for m in range(self.stop_step):

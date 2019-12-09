@@ -48,32 +48,30 @@ class MyEnvironment(object):
                 # test data
                 _, self.dataloader = get_dataloader('GoPro', '/data', 5, 63, 0)
                 self.test_batch = config.test_batch
-                self.test_in = config.test_dir + config.dataset + '_in/'
-                self.test_gt = config.test_dir + config.dataset + '_gt/'
-                list_in = [self.test_in + name for name in os.listdir(self.test_in)]
-                list_in.sort()
-                list_gt = [self.test_gt + name for name in os.listdir(self.test_gt)]
-                list_gt.sort()
-                self.name_list = [os.path.splitext(os.path.basename(file))[0] for file in list_in]
-                self.data_all, self.label_all = load_imgs(list_in, list_gt)
-                self.data_it = iter(self.dataloader)
+                # self.test_in = config.test_dir + config.dataset + '_in/'
+                # self.test_gt = config.test_dir + config.dataset + '_gt/'
+                # list_in = [self.test_in + name for name in os.listdir(self.test_in)]
+                # list_in.sort()
+                # list_gt = [self.test_gt + name for name in os.listdir(self.test_gt)]
+                # list_gt.sort()
+                # self.name_list = [os.path.splitext(os.path.basename(file))[0] for file in list_in]
+                # self.data_all, self.label_all = load_imgs(list_in, list_gt)
+                # self.data_it = iter(self.dataloader)
                 self.test_total = len(self.dataloader)
                 self.test_cur = 0
     
-                # data reformat, because the data for tools training are in a different format
-                self.data_all = data_reformat(self.data_all)
-                self.label_all = data_reformat(self.label_all)
-                self.data_test = self.data_all[0 : min(self.test_batch, self.test_total), ...]
-                self.label_test = self.label_all[0 : min(self.test_batch, self.test_total), ...]
+                
+                img, gt = next(iter(self.dataloader))[0].numpy(), next(iter(self.dataloader))[1].numpy()
+                self.data_test = img.transpose((0, 2,3,1))#self.data_all[0 : min(self.test_batch, self.test_total), ...]
+                self.label_test = gt.transpose((0, 2,3,1))#self.label_all[0 : min(self.test_batch, self.test_total), ...]
+                print('self.data_test', self.data_test.shape)
+                print('self.label_test', self.label_test.shape)
             else:
                 raise ValueError('Invalid dataset!')
 
         if self.is_train or config.dataset!='mine':
             # input PSNR
             self.base_psnr = 0.
-            # for k in range(len(self.data_test)):
-            #     self.base_psnr += psnr_cal(self.data_test[k, ...], self.label_test[k, ...])
-            # self.base_psnr /= len(self.data_test)
 
             # reward functions
             self.rewards = {'step_psnr_reward': step_psnr_reward}
@@ -99,7 +97,7 @@ class MyEnvironment(object):
                 self.outputs.append(output_data)
                 # save graph
                 self.graphs.append(g)
-            sess = tf.Session(graph=g, config=tf.ConfigProto(log_device_placement=True))
+            sess = tf.Session(graph=g, config=tf.ConfigProto(log_device_placement=False))
             with g.as_default():
                 with sess.as_default():
                     saver.restore(sess, toolbox_path + 'tool%02d' % (idx + 1))
@@ -225,23 +223,35 @@ class MyEnvironment(object):
             self.data_test, self.label_test = self.data_test.numpy(), self.label_test.numpy()
         except StopIteration:
             return False
+            # update base psnr
+            self.base_psnr = 0.
+            for k in range(len(self.data_test)):
+                self.base_psnr += psnr_cal(self.data_test[k, ...], self.label_test[k, ...])
+            self.base_psnr /= len(self.data_test)
+            return True #successful
+        # try:
+        #     self.data_test, self.label_test, _ = next(self.data_it)
+        #     self.test_cur += len(self.data_test)
+        #     self.data_test, self.label_test = self.data_test.numpy(), self.label_test.numpy()
+        # except StopIteration:
+        #     return False
 
 
-        # self.test_cur = self.test_cur + len(self.data_test)
-        # test_end = min(self.test_total, self.test_cur + self.test_batch)
-        # if self.test_cur >= test_end:
-        #     return False #failed
-        # else:
-        #     self.data_test = self.data_all[self.test_cur: test_end, ...]
-        #     self.label_test = self.label_all[self.test_cur: test_end, ...]
+        # # self.test_cur = self.test_cur + len(self.data_test)
+        # # test_end = min(self.test_total, self.test_cur + self.test_batch)
+        # # if self.test_cur >= test_end:
+        # #     return False #failed
+        # # else:
+        # #     self.data_test = self.data_all[self.test_cur: test_end, ...]
+        # #     self.label_test = self.label_all[self.test_cur: test_end, ...]
 
-        #     # update base psnr
-        # if not self.is_train:
-        self.base_psnr = 0.
-        for k in range(len(self.data_test)):
-            self.base_psnr += psnr_cal(self.data_test[k, ...], self.label_test[k, ...])
-        self.base_psnr /= len(self.data_test)
-        return True #successful
+        # #     # update base psnr
+        # # if not self.is_train:
+        # self.base_psnr = 0.
+        # for k in range(len(self.data_test)):
+        #     self.base_psnr += psnr_cal(self.data_test[k, ...], self.label_test[k, ...])
+        # self.base_psnr /= len(self.data_test)
+        # return True #successful
 
 
     def act_test_mine(self, my_img_cur, action):

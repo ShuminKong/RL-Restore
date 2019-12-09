@@ -12,7 +12,7 @@ flags.DEFINE_boolean('is_train', False, 'Whether to do training or testing')
 # test
 flags.DEFINE_boolean('is_save', True, 'Whether to save results')
 flags.DEFINE_string('dataset', 'moderate', 'Select a dataset from mild/moderate/severe')
-flags.DEFINE_string('play_model', 'models/', 'Path for testing model')
+flags.DEFINE_string('play_model', 'models/save', 'Path for testing model')
 # training
 flags.DEFINE_string('save_dir', 'models/save/', 'Path for saving models')
 flags.DEFINE_string('log_dir', 'logs/', 'Path for logs')
