@@ -54,8 +54,8 @@ class EnvironmentConfig(object):
     train_dir = 'data/train/'
     val_dir = 'data/valid/'
     test_dir = 'data/test/'
-    data_dir = '/data'
-    ds = 'GoPro'
+    data_dir = '/project/3DPC/marl/data/'
+    ds = 'DIV2K'
 
 
 class DQNConfig(AgentConfig, EnvironmentConfig):
