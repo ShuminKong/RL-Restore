@@ -46,7 +46,7 @@ class MyEnvironment(object):
 
             elif config.dataset in ['mild', 'moderate', 'severe']:
                 # test data
-                _, self.dataloader = get_dataloader('GoPro', '/data', 5, 63, 0)
+                _, self.dataloader = get_dataloader(config.ds, '/data', 5, 63, 0)
                 self.test_batch = config.test_batch
                 self.test_in = config.test_dir + config.dataset + '_in/'
                 self.test_gt = config.test_dir + config.dataset + '_gt/'
@@ -99,7 +99,7 @@ class MyEnvironment(object):
                 self.outputs.append(output_data)
                 # save graph
                 self.graphs.append(g)
-            sess = tf.Session(graph=g, config=tf.ConfigProto(log_device_placement=True))
+            sess = tf.Session(graph=g, config=tf.ConfigProto(log_device_placement=False))
             with g.as_default():
                 with sess.as_default():
                     saver.restore(sess, toolbox_path + 'tool%02d' % (idx + 1))

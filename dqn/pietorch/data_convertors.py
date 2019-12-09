@@ -98,6 +98,9 @@ class ConvertImageSet(data.Dataset):
 
         elif self.data_name == 'DIDMDN_Data':
             return DIDMDNdata_loader(self.dataroot, im_name, self.is_train)
+        elif self.data_name == 'DIV2K':
+            return DIV2K_loader(self.dataroot, im_name)
+
         else:
             print("Unknown dataset.")
             quit()
@@ -170,8 +173,21 @@ class ConvertImageSet(data.Dataset):
             im_input = im_input.transpose((3, 2, 0, 1))
             im_input = torch.FloatTensor(im_input)
             im_input/= 255.0
-        else:
-            pass
+        elif self.data_name in ['DIV2K']:
+            if not self.crop_size is None:
+                im_input, label = CropSample(im_input, label, self.crop_size)
+            if self.with_aug:
+                im_input, label = DataAugmentation(im_input, label)
+
+            # im_input = self.transform(im_input)  
+            jpeg, transf, noise_level = self.transform
+            if noise_level > 0:
+                im_input = AddGaussianNoisePatch(im_input, noise_level)       
+
+            if jpeg > 0:
+                im_input = jpeg_compress(im_input, jpeg)
+            im_input = transf(im_input)       
+            label    = transf(label)
             
         return im_input, label
         
@@ -324,7 +340,24 @@ def DDNdata_loader(dataroot, im_name, is_train):
     
     return rainy, label
    
+def DIV2K_loader(dataroot, im_name):
+    # name1, name2 = im_name.split('/')
+    # blur_pth  = dataroot+name1+'/blur/'+name2   
+    # label_pth = dataroot+name1+'/sharp/'+name2  
+    path = os.path.join(dataroot, im_name) 
+    img = cv2.imread(path)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)    
+
+    img_gt = img.copy()
     
+    # blur = cv2.imread(blur_pth)
+    # blur = cv2.cvtColor(blur, cv2.COLOR_BGR2RGB)
+
+    # label = cv2.imread(label_pth)
+    # label = cv2.cvtColor(label, cv2.COLOR_BGR2RGB)
+    return img, img_gt
+
+
 def align_to_k(img, k=4):
     a_row = int(img.shape[0]/k)*k
     a_col = int(img.shape[1]/k)*k
@@ -344,7 +377,30 @@ def AddGaussianNoise(patchs, var):
     noise_pad = torch.div(noise_pad, 255.0)
     patchs+= noise_pad    
     return patchs    
+
+def AddGaussianNoisePatch(patchs, var):
+    # A randomly generated seed. Use it for an easy performance comparison.
+    m_seed_cpu = 8526081014239199321
+    m_seed_gpu = 8223752412272754
+    # torch.cuda.manual_seed(m_seed_gpu)
+    # torch.manual_seed(m_seed_cpu)
     
+    # c, h, w = patchs.size()
+    patchs = np.array(patchs)
+    h,w,c = patchs.shape
+    sh = int(np.random.uniform(0, h-2))
+    eh = int(np.random.uniform(sh, h-1))
+
+    sw = int(np.random.uniform(0, w-2))
+    ew = int(np.random.uniform(sw, w-1))
+
+    noise_pad = np.random.normal(scale=var, size=(eh-sh,ew-sw,c))
+
+    patchs[sh:eh, sw:ew] = noise_pad
+  
+    return Image.fromarray(patchs)    
+
+
 def jpeg_compress(img, level):
     buffer = io.BytesIO()
     img.save(buffer, format='jpeg', quality=random.randrange(level+1))
