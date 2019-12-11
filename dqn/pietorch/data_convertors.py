@@ -384,21 +384,20 @@ def AddGaussianNoisePatch(patchs, var):
     m_seed_gpu = 8223752412272754
     # torch.cuda.manual_seed(m_seed_gpu)
     # torch.manual_seed(m_seed_cpu)
-    
     # c, h, w = patchs.size()
-    patchs = np.array(patchs)
+    patchs = np.array(patchs).astype(np.float32)
     h,w,c = patchs.shape
-    sh = int(np.random.uniform(0, h-2))
+    sh = int(np.random.uniform(0, h/2))
     eh = int(np.random.uniform(sh, h-1))
 
-    sw = int(np.random.uniform(0, w-2))
+    sw = int(np.random.uniform(0, w/2))
     ew = int(np.random.uniform(sw, w-1))
 
     noise_pad = np.random.normal(scale=var, size=(eh-sh,ew-sw,c))
+    patchs[sh:eh, sw:ew] +=  noise_pad
+    patchs = patchs.astype(np.uint8)
 
-    patchs[sh:eh, sw:ew] = noise_pad
-  
-    return Image.fromarray(patchs)    
+    return Image.fromarray(patchs)
 
 
 def jpeg_compress(img, level):
