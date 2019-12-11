@@ -32,12 +32,20 @@ def img2patch(my_img, size=63):
     return np.array(patches)
 
 
+# def data_reformat(data):
+#     """RGB <--> BGR, swap H and W"""
+#     assert data.ndim == 4
+#     out = data.transpose((0, 2,3,1))[:, :, :, ::-1]
+#     out = np.swapaxes(out, 1, 2)
+#     return out
+
 def data_reformat(data):
     """RGB <--> BGR, swap H and W"""
     assert data.ndim == 4
-    out = data.transpose((0, 2,3,1))[:, :, :, ::-1]
-    out = np.swapaxes(out, 1, 2)
+    out = data[:, :, :, ::-1]
+    # out = np.swapaxes(out, 1, 2)
     return out
+
 
 
 def step_psnr_reward(psnr, psnr_pre):

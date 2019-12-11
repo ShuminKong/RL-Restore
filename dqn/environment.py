@@ -38,8 +38,8 @@ class MyEnvironment(object):
             # self.data_all = self.data_test
             # self.label_all = self.label_test
             img, gt = next(iter(self.dataloader))[0].numpy(), next(iter(self.dataloader))[1].numpy()
-            self.data_test = img.transpose((0, 2,3,1))#self.data_all[0 : min(self.test_batch, self.test_total), ...]
-            self.label_test = gt.transpose((0, 2,3,1))#self.label_all[0 : min(self.test_batch, self.test_total), ...]
+            self.data_test = data_reformat(img.transpose((0, 2,3,1)))#self.data_all[0 : min(self.test_batch, self.test_total), ...]
+            self.label_test = data_reformat(gt.transpose((0, 2,3,1)))#self.label_all[0 : min(self.test_batch, self.test_total), ...]
             self.data_all = self.data_test
             self.label_all = self.label_test
 
@@ -53,7 +53,7 @@ class MyEnvironment(object):
 
             elif config.dataset in ['mild', 'moderate', 'severe']:
                 # test data
-                _, self.dataloader = get_dataloader(config.ds, '/data', 5, 63, 0)
+                _, self.dataloader = get_dataloader(config.ds, '/data', 0, 63, 70)
                 # self.test_batch = config.test_batch
                 # self.test_in = config.test_dir + config.dataset + '_in/'
                 # self.test_gt = config.test_dir + config.dataset + '_gt/'
@@ -73,8 +73,8 @@ class MyEnvironment(object):
                 # self.data_test = self.data_all[0 : min(self.test_batch, self.test_total), ...]
                 # self.label_test = self.label_all[0 : min(self.test_batch, self.test_total), ...]
                 img, gt = next(iter(self.dataloader))[0].numpy(), next(iter(self.dataloader))[1].numpy()
-                self.data_test = img.transpose((0, 2,3,1))#self.data_all[0 : min(self.test_batch, self.test_total), ...]
-                self.label_test = gt.transpose((0, 2,3,1))#self.label_all[0 : min(self.test_batch, self.test_total), ...]
+                self.data_test = data_reformat(img.transpose((0, 2,3,1)))#self.data_all[0 : min(self.test_batch, self.test_total), ...]
+                self.label_test = data_reformat(gt.transpose((0, 2,3,1)))#self.label_all[0 : min(self.test_batch, self.test_total), ...]
 
             else:
                 raise ValueError('Invalid dataset!')
@@ -132,7 +132,9 @@ class MyEnvironment(object):
                 continue
             else:
                 break
-
+            # data_reformat
+        self.img, self.img_gt = data_reformat(self.img), data_reformat(self.img_gt)
+        # cv2.imwrite('img.jpg', (255*self.img[0]).astype(np.uint8)), cv2.imwrite('gt.jpg', (self.img_gt[0]*255).astype(np.uint8))
         # # update training file
         # if self.data_index >= self.data_len:
         #     if self.train_max > 1:
@@ -189,7 +191,6 @@ class MyEnvironment(object):
         # calculate reward
         self.reward = self.reward_function(self.psnr, self.psnr_pre)
         self.count += 1
-
         return self.img, self.reward, self.terminal
 
 

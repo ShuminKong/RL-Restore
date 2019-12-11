@@ -200,10 +200,12 @@ class Agent(BaseModel):
             # 1. agent predicts an action
             action = self.predict(img)
             self.pre_action = action
-
+            before = img[0]*255
+            # cv2.imwrite('before.jpg')
             # 2. environment conducts the action
             img, reward, terminal = self.env.act(action)
-
+            # cv2.imwrite('after.jpg', img[0]*255)
+            after = img[0]*255
             # 3. observe (add memory, train)
             self.observe(img, reward, action, terminal)
 
