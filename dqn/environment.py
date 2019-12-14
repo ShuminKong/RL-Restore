@@ -25,7 +25,7 @@ class MyEnvironment(object):
             # self.data = f['data'].value
             # self.label = f['label'].value
             # f.close()
-            self.dataloader, self.test_dataloader = get_dataloader(config.ds, config.data_dir, 5, 63, 0)
+            self.dataloader, self.test_dataloader = get_dataloader(config.ds, config.data_dir, 50, 63, 0)
             self.data_index = 0
             self.data_len = len(self.dataloader)
             self.data_it = iter(self.dataloader)
@@ -37,7 +37,7 @@ class MyEnvironment(object):
             # f.close()
             # self.data_all = self.data_test
             # self.label_all = self.label_test
-            img, gt = next(iter(self.dataloader))[0].numpy(), next(iter(self.dataloader))[1].numpy()
+            img, gt = next(iter(self.test_dataloader))[0].numpy(), next(iter(self.test_dataloader))[1].numpy()
             self.data_test = data_reformat(img.transpose((0, 2,3,1)))#self.data_all[0 : min(self.test_batch, self.test_total), ...]
             self.label_test = data_reformat(gt.transpose((0, 2,3,1)))#self.label_all[0 : min(self.test_batch, self.test_total), ...]
             self.data_all = self.data_test

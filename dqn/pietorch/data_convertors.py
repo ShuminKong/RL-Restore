@@ -181,12 +181,12 @@ class ConvertImageSet(data.Dataset):
 
             # im_input = self.transform(im_input)  
             jpeg, transf, noise_level = self.transform
-            if noise_level > 0:
-                im_input = AddGaussianNoisePatch(im_input, noise_level)       
-
             if jpeg > 0:
                 im_input = jpeg_compress(im_input, jpeg)
             im_input = transf(im_input)       
+            if noise_level > 0:
+                im_input = AddGaussianNoise_tensor(im_input, noise_level)    
+
             label    = transf(label)
             
         return im_input, label
@@ -375,7 +375,29 @@ def AddGaussianNoise(patchs, var):
     c, h, w = patchs.size()
     noise_pad = torch.FloatTensor(c, h, w).normal_(0, var)
     noise_pad = torch.div(noise_pad, 255.0)
+
     patchs+= noise_pad    
+    return patchs  
+
+def AddGaussianNoise_tensor(patchs, var):
+    # A randomly generated seed. Use it for an easy performance comparison.
+    # m_seed_cpu = 8526081014239199321
+    # m_seed_gpu = 8223752412272754
+    # torch.cuda.manual_seed(m_seed_gpu)
+    # torch.manual_seed(m_seed_cpu)
+    
+    c, h, w = patchs.size()
+    noise_pad = torch.FloatTensor(c, h, w).normal_(0, var)
+    noise_pad = torch.div(noise_pad, 255.0)
+
+    sh = (torch.rand(1)*h/2).int().squeeze()
+    eh = sh+(torch.rand(1)*(h-sh)).int().squeeze()
+
+    sw = (torch.rand(1)*w/2).int().squeeze()
+    ew = sw+(torch.rand(1)*(w-sw)).int().squeeze()
+
+    patchs[:,sh:eh, sw:ew] +=  noise_pad[:,sh:eh, sw:ew]
+    # print(eh-sh, ew-sw)
     return patchs    
 
 def AddGaussianNoisePatch(patchs, var):
@@ -384,6 +406,7 @@ def AddGaussianNoisePatch(patchs, var):
     m_seed_gpu = 8223752412272754
     # torch.cuda.manual_seed(m_seed_gpu)
     # torch.manual_seed(m_seed_cpu)
+    
     # c, h, w = patchs.size()
     patchs = np.array(patchs).astype(np.float32)
     h,w,c = patchs.shape
@@ -393,11 +416,13 @@ def AddGaussianNoisePatch(patchs, var):
     sw = int(np.random.uniform(0, w/2))
     ew = int(np.random.uniform(sw, w-1))
 
-    noise_pad = np.random.normal(scale=var, size=(eh-sh,ew-sw,c))
-    patchs[sh:eh, sw:ew] +=  noise_pad
+    # noise_pad = np.random.normal(scale=var, size=(eh-sh,ew-sw,c))
+    # patchs[sh:eh, sw:ew] +=  noise_pad
+    noise_pad = np.random.normal(scale=var, size=patchs.shape)/255
+    patchs +=  noise_pad
     patchs = patchs.astype(np.uint8)
-
-    return Image.fromarray(patchs)
+  
+    return Image.fromarray(patchs)    
 
 
 def jpeg_compress(img, level):
