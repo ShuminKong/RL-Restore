@@ -15,7 +15,7 @@ class AgentConfig(object):
     # train model
     save_dir = 'models/save/'
     log_dir = 'logs/'
-    memory_size = 500000
+    memory_size = 50000
     learn_start = 5000
     test_step = 1000
     save_step = 50000
@@ -42,8 +42,8 @@ class AgentConfig(object):
 
 class EnvironmentConfig(object):
     # params for environment
-    screen_width  = 63
-    screen_height = 63
+    screen_width  = 128
+    screen_height = 128
     screen_channel = 3
     dataset = 'moderate'  # mild / moderate / severe
     test_batch = 2048  # test how many patches at a time

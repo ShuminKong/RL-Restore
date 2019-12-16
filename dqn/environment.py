@@ -25,7 +25,7 @@ class MyEnvironment(object):
             # self.data = f['data'].value
             # self.label = f['label'].value
             # f.close()
-            self.dataloader, self.test_dataloader = get_dataloader(config.ds, config.data_dir, 50, 63, 0)
+            self.dataloader, self.test_dataloader = get_dataloader(config.ds, config.data_dir, 50, config.screen_width, 0)
             self.data_index = 0
             self.data_len = len(self.dataloader)
             self.data_it = iter(self.dataloader)

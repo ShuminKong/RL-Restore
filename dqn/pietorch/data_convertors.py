@@ -367,10 +367,10 @@ def align_to_k(img, k=4):
 
 def AddGaussianNoise(patchs, var):
     # A randomly generated seed. Use it for an easy performance comparison.
-    m_seed_cpu = 8526081014239199321
-    m_seed_gpu = 8223752412272754
-    torch.cuda.manual_seed(m_seed_gpu)
-    torch.manual_seed(m_seed_cpu)
+    # m_seed_cpu = 8526081014239199321
+    # m_seed_gpu = 8223752412272754
+    # torch.cuda.manual_seed(m_seed_gpu)
+    # torch.manual_seed(m_seed_cpu)
     
     c, h, w = patchs.size()
     noise_pad = torch.FloatTensor(c, h, w).normal_(0, var)

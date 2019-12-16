@@ -70,7 +70,7 @@ def get_dataloader(ds, data_dir, noise=10, crop=256, jpeg_quality=40):
         dataloader, test_dataloader = DataLoader(convertor, batch_size=32, shuffle=False), DataLoader(test_convertor, batch_size=32, shuffle=False)
     elif ds == 'DIV2K':
         transform = [jpeg_quality, T.ToTensor(), noise]
-        crop_size, with_data_aug  = 63, False
+        crop_size, with_data_aug  = 128, False
         test_root, test_list_pth = os.path.join(data_dir, ds), os.path.join('split', ds, 'test_list.txt')
         test_convertor = data_convertors.ConvertImageSet(test_root, test_list_pth, ds, crop_size=crop_size, transform=transform)
 
