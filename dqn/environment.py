@@ -31,18 +31,18 @@ class MyEnvironment(object):
             self.data_it = iter(self.dataloader)
 
             # validation data
-            # f = h5py.File(config.val_dir + os.listdir(config.val_dir)[0], 'r')
-            # self.data_test = f['data'].value
-            # self.label_test = f['label'].value
-            # f.close()
-            # self.data_all = self.data_test
-            # self.label_all = self.label_test
-            img, gt = next(iter(self.test_dataloader))[0].numpy(), next(iter(self.test_dataloader))[1].numpy()
+            test_img, test_gt = [], []
+            for data in self.test_dataloader:
+                img, gt, _ = data
+                test_img.append(img.numpy())
+                test_gt.append(gt.numpy())
+            img, gt = np.concatenate(test_img, 0), np.concatenate(test_gt, 0)
+            # img, gt = next(iter(self.test_dataloader))[0].numpy(), next(iter(self.test_dataloader))[1].numpy()
             self.data_test = data_reformat(img.transpose((0, 2,3,1)))#self.data_all[0 : min(self.test_batch, self.test_total), ...]
             self.label_test = data_reformat(gt.transpose((0, 2,3,1)))#self.label_all[0 : min(self.test_batch, self.test_total), ...]
             self.data_all = self.data_test
             self.label_all = self.label_test
-
+            
 
         else:
             if config.dataset == 'mine':

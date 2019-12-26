@@ -80,7 +80,7 @@ def get_dataloader(ds, data_dir, noise=10, crop=256, jpeg_quality=40):
         convertor  = data_convertors.ConvertImageSet(data_root, imlist_pth, ds,
                                             transform=transform, is_train=True,
                                             with_aug=with_data_aug, crop_size=crop_size)
-        dataloader, test_dataloader = DataLoader(convertor, batch_size=1, shuffle=False), DataLoader(test_convertor, batch_size=50, shuffle=False)
+        dataloader, test_dataloader = DataLoader(convertor, batch_size=1, shuffle=False), DataLoader(test_convertor, batch_size=1, shuffle=False)
 
 
     return dataloader, test_dataloader
